@@ -29,7 +29,7 @@ with st.sidebar:
 # --- MAIN CONTENT ---
 st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
 
-# Banner Hijau Welcome - NAMA DIGANTI SISMONRAN
+# Banner Hijau Welcome
 st.success("✅ **Welcome To SISMONRAN Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
 
 # --- BARIS 1: KARTU STATISTIK ---
@@ -49,4 +49,20 @@ st.markdown("---")
 col_table, col_chart = st.columns([1, 1])
 
 with col_table:
-    st.markdown("
+    st.markdown("📋 **Data Kendaraan Terdeteksi**")
+    data_kondisi = {
+        'No': [1, 2, 3, 4],
+        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
+        'Jumlah': [750, 400, 65, 30]
+    }
+    df_kondisi = pd.DataFrame(data_kondisi)
+    st.table(df_kondisi.set_index('No'))
+
+with col_chart:
+    st.markdown("📊 **Statistik Volume**")
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', color='Jenis',
+                 color_discrete_map={
+                     'Sepeda Motor': '#3c8dbc', 
+                     'Mobil Pribadi': '#dd4b39', 
+                     'Truk': '#00a65a', 
+                     'Bis':
