@@ -4,7 +4,7 @@ import plotly.express as px
 from datetime import datetime
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="SISMAKADIS 1.0 - Monitoring", layout="wide")
+st.set_page_config(page_title="SISMONRAN 1.0 - Monitoring", layout="wide")
 
 # --- CUSTOM CSS ---
 st.markdown("""
@@ -28,7 +28,9 @@ with st.sidebar:
 
 # --- MAIN CONTENT ---
 st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
-st.success("✅ **Welcome To SISMAKADIS Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
+
+# Banner Hijau Welcome - NAMA DIGANTI SISMONRAN
+st.success("✅ **Welcome To SISMONRAN Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
 
 # --- BARIS 1: KARTU STATISTIK ---
 col1, col2, col3, col4 = st.columns(4)
@@ -47,34 +49,4 @@ st.markdown("---")
 col_table, col_chart = st.columns([1, 1])
 
 with col_table:
-    st.markdown("📋 **Data Kendaraan Terdeteksi**")
-    data_kondisi = {
-        'No': [1, 2, 3, 4],
-        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
-        'Jumlah': [750, 400, 65, 30]
-    }
-    df_kondisi = pd.DataFrame(data_kondisi)
-    st.table(df_kondisi.set_index('No'))
-
-with col_chart:
-    st.markdown("📊 **Statistik Volume**")
-    # Bagian ini yang tadi terputus, sekarang sudah utuh:
-    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', color='Jenis',
-                 color_discrete_map={
-                     'Sepeda Motor': '#3c8dbc', 
-                     'Mobil Pribadi': '#dd4b39', 
-                     'Truk': '#00a65a', 
-                     'Bis': '#f39c12'
-                 })
-    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
-    st.plotly_chart(fig, use_container_width=True)
-
-# --- BARIS 3: LOG DETAIL ---
-st.markdown("🕒 **Log Aktivitas Terakhir**")
-log_data = pd.DataFrame({
-    'Waktu': [datetime.now().strftime('%H:%M:%S') for _ in range(4)],
-    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
-    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
-    'Status': ['Terdeteksi', 'Terdeteksi', 'Terdeteksi', 'Terdeteksi']
-})
-st.dataframe(log_data, use_container_width=True)
+    st.markdown("
