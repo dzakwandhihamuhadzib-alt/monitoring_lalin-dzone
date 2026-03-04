@@ -1,70 +1,82 @@
-from ultralytics import YOLO
-import cv2
-import csv
-import datetime
-import os
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
 
-# 1. SETTING DASAR
-nama_video = "video-tes_hitungkendaraan.MP4" 
-nama_file_csv = "laporan_deteksi_kendaraan.csv"
-model = YOLO("yolov8n.pt") 
+# --- KONFIGURASI HALAMAN ---
+st.set_page_config(page_title="SISMONRAN 1.0 - Monitoring", layout="wide")
 
-cap = cv2.VideoCapture(nama_video)
-track_history = {} 
+# --- CUSTOM CSS ---
+st.markdown("""
+    <style>
+    [data-testid="stSidebar"] { background-color: #222d32; color: white; }
+    [data-testid="stSidebar"] .stMarkdown p { color: #b8c7ce; }
+    .stMetric { background-color: #ffffff; border-top: 3px solid #00c0ef; padding: 15px; border-radius: 5px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+    .main-header { font-size: 24px; font-weight: bold; margin-bottom: -10px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# Membuat Header Baru (Hapus dulu file lama agar tidak double header)
-if not os.path.exists(nama_file_csv):
-    with open(nama_file_csv, mode='w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['Jam', 'Jenis Kendaraan', 'Kecepatan'])
+# --- SIDEBAR (NAVIGASI) ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70)
+    st.markdown("**DZAKWAN DHIHA MUHADZDZIB** \n*Admin Utama*")
+    st.markdown("---")
+    st.markdown("🔍 **Navigation**")
+    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi"])
+    st.markdown("---")
+    st.info("Sistem Monitoring Aktif")
 
-print("--- PROGRAM DIMULAI (TEKAN 'Q' UNTUK BERHENTI) ---")
+# --- MAIN CONTENT ---
+st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
 
-while True:
-    success, img = cap.read()
-    if not success: break
+# Banner Hijau Welcome
+st.success("✅ **Welcome To SISMONRAN Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
 
-    # Menggunakan model.track agar ID kendaraan konsisten (penting untuk hitung kecepatan)
-    results = model.track(img, persist=True, classes=[2, 3, 5, 7], verbose=False)
+# --- BARIS 1: KARTU STATISTIK ---
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Real-time")
+with col2:
+    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Lancar")
+with col3:
+    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
+with col4:
+    st.metric(label="PELANGGARAN", value="12", delta="CCTV Aktif")
 
-    # Cek apakah ada objek yang terdeteksi
-    if results[0].boxes.id is not None:
-        boxes = results[0].boxes.xyxy.cpu().numpy().astype(int)
-        ids = results[0].boxes.id.cpu().numpy().astype(int)
-        clss = results[0].boxes.cls.cpu().numpy().astype(int)
+st.markdown("---")
 
-        for box, track_id, cls in zip(boxes, ids, clss):
-            x1, y1, x2, y2 = box
-            label = model.names[cls]
-            pusat_y = (y1 + y2) // 2 
+# --- BARIS 2: TABEL & GRAFIK ---
+col_table, col_chart = st.columns([1, 1])
 
-            # HITUNG KECEPATAN
-            kmh = 0
-            if track_id in track_history:
-                selisih = abs(pusat_y - track_history[track_id])
-                kmh = int(selisih * 5.0) # Sesuaikan angka 5.0 ini jika terlalu lambat/cepat
-            
-            track_history[track_id] = pusat_y
-            waktu_skrg = datetime.datetime.now().strftime("%H:%M:%S")
+with col_table:
+    st.markdown("📋 **Data Kendaraan Terdeteksi**")
+    data_kondisi = {
+        'No': [1, 2, 3, 4],
+        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
+        'Jumlah': [750, 400, 65, 30]
+    }
+    df_kondisi = pd.DataFrame(data_kondisi)
+    st.table(df_kondisi.set_index('No'))
 
-            # --- BAGIAN KRUSIAL: SIMPAN DATA ---
-            # Pastikan blok ini sejajar di bawah 'for box...', bukan di dalam 'if kmh > 0'
-            try:
-                with open(nama_file_csv, mode='a', newline='') as f:
-                    writer = csv.writer(f)
-                    writer.writerow([waktu_skrg, label, f"{kmh} km/jam"])
-            except PermissionError:
-                # Jika file dibuka di Excel, tampilkan peringatan di layar saja
-                cv2.putText(img, "CLOSE EXCEL!", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+with col_chart:
+    st.markdown("📊 **Statistik Volume**")
+    # Bagian ini yang harus dipastikan tertutup dengan benar
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', color='Jenis',
+                 color_discrete_map={
+                     'Sepeda Motor': '#3c8dbc', 
+                     'Mobil Pribadi': '#dd4b39', 
+                     'Truk': '#00a65a', 
+                     'Bis': '#f39c12'
+                 })
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
 
-            # VISUALISASI DI LAYAR
-            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(img, f"ID:{track_id} {label} {kmh} km/h", (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-    cv2.imshow("Monitoring Kecepatan", img)
-    if cv2.waitKey(1) & 0xFF == ord('q'): break
-
-cap.release()
-cv2.destroyAllWindows()
-print(f"Selesai! Cek file di: {os.path.abspath(nama_file_csv)}")
+# --- BARIS 3: LOG DETAIL ---
+st.markdown("🕒 **Log Aktivitas Terakhir**")
+log_data = pd.DataFrame({
+    'Waktu': [datetime.now().strftime('%H:%M:%S') for _ in range(4)],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Status': ['Terdeteksi', 'Terdeteksi', 'Terdeteksi', 'Terdeteksi']
+})
+st.dataframe(log_data, use_container_width=True)
