@@ -1,82 +1,63 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-from datetime import datetime
+from flask import Flask, render_template, Response
+import cv2
+from ultralytics import YOLO
+import datetime
 
-# --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="SISMONRAN 1.0 - Monitoring", layout="wide")
+app = Flask(__name__)
 
-# --- CUSTOM CSS ---
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] { background-color: #222d32; color: white; }
-    [data-testid="stSidebar"] .stMarkdown p { color: #b8c7ce; }
-    .stMetric { background-color: #ffffff; border-top: 3px solid #00c0ef; padding: 15px; border-radius: 5px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-    .main-header { font-size: 24px; font-weight: bold; margin-bottom: -10px; }
-    </style>
-    """, unsafe_allow_html=True)
+# Load Model
+model = YOLO("yolov8n.pt")
+video_path = "video-tes_hitungkendaraan.MP4"
 
-# --- SIDEBAR (NAVIGASI) ---
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70)
-    st.markdown("**DZAKWAN DHIHA MUHADZDZIB** \n*Admin Utama*")
-    st.markdown("---")
-    st.markdown("🔍 **Navigation**")
-    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi"])
-    st.markdown("---")
-    st.info("Sistem Monitoring Aktif")
+def generate_frames():
+    cap = cv2.VideoCapture(video_path)
+    track_history = {}
 
-# --- MAIN CONTENT ---
-st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
+    while True:
+        success, frame = cap.read()
+        if not success:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0) # Ulang video jika habis
+            continue
+        
+        # Deteksi & Tracking
+        results = model.track(frame, persist=True, classes=[2, 3, 5, 7], verbose=False)
+        
+        if results[0].boxes.id is not None:
+            boxes = results[0].boxes.xyxy.cpu().numpy().astype(int)
+            ids = results[0].boxes.id.cpu().numpy().astype(int)
+            clss = results[0].boxes.cls.cpu().numpy().astype(int)
 
-# Banner Hijau Welcome
-st.success("✅ **Welcome To SISMONRAN Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
+            for box, track_id, cls in zip(boxes, ids, clss):
+                x1, y1, x2, y2 = box
+                label = model.names[cls]
+                
+                # Hitung Kecepatan Sederhana (Y-axis)
+                pusat_y = (y1 + y2) // 2
+                kmh = 0
+                if track_id in track_history:
+                    kmh = int(abs(pusat_y - track_history[track_id]) * 5)
+                track_history[track_id] = pusat_y
 
-# --- BARIS 1: KARTU STATISTIK ---
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Real-time")
-with col2:
-    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Lancar")
-with col3:
-    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
-with col4:
-    st.metric(label="PELANGGARAN", value="12", delta="CCTV Aktif")
+                # Gambar di Frame
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, f"{label} ID:{track_id} {kmh} km/h", (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-st.markdown("---")
+        # Encode frame ke JPEG agar bisa dikirim ke Web
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-# --- BARIS 2: TABEL & GRAFIK ---
-col_table, col_chart = st.columns([1, 1])
+@app.route('/')
+def index():
+    # Menampilkan halaman utama
+    return render_template('index.html')
 
-with col_table:
-    st.markdown("📋 **Data Kendaraan Terdeteksi**")
-    data_kondisi = {
-        'No': [1, 2, 3, 4],
-        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
-        'Jumlah': [750, 400, 65, 30]
-    }
-    df_kondisi = pd.DataFrame(data_kondisi)
-    st.table(df_kondisi.set_index('No'))
+@app.route('/video_feed')
+def video_feed():
+    # Jalur khusus untuk streaming video
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-with col_chart:
-    st.markdown("📊 **Statistik Volume**")
-    # Bagian ini yang harus dipastikan tertutup dengan benar
-    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', color='Jenis',
-                 color_discrete_map={
-                     'Sepeda Motor': '#3c8dbc', 
-                     'Mobil Pribadi': '#dd4b39', 
-                     'Truk': '#00a65a', 
-                     'Bis': '#f39c12'
-                 })
-    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
-    st.plotly_chart(fig, use_container_width=True)
-
-# --- BARIS 3: LOG DETAIL ---
-st.markdown("🕒 **Log Aktivitas Terakhir**")
-log_data = pd.DataFrame({
-    'Waktu': [datetime.now().strftime('%H:%M:%S') for _ in range(4)],
-    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
-    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
-    'Status': ['Terdeteksi', 'Terdeteksi', 'Terdeteksi', 'Terdeteksi']
-})
-st.dataframe(log_data, use_container_width=True)
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
