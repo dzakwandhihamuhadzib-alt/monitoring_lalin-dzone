@@ -60,9 +60,23 @@ with col_table:
 
 with col_chart:
     st.markdown("📊 **Statistik Volume**")
+    # Bagian ini yang harus dipastikan tertutup dengan benar
     fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', color='Jenis',
                  color_discrete_map={
                      'Sepeda Motor': '#3c8dbc', 
                      'Mobil Pribadi': '#dd4b39', 
                      'Truk': '#00a65a', 
-                     'Bis':
+                     'Bis': '#f39c12'
+                 })
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- BARIS 3: LOG DETAIL ---
+st.markdown("🕒 **Log Aktivitas Terakhir**")
+log_data = pd.DataFrame({
+    'Waktu': [datetime.now().strftime('%H:%M:%S') for _ in range(4)],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Status': ['Terdeteksi', 'Terdeteksi', 'Terdeteksi', 'Terdeteksi']
+})
+st.dataframe(log_data, use_container_width=True)
