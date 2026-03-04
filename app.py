@@ -1,66 +1,631 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import datetime
+from datetime import datetime
 
-# Konfigurasi Halaman
-st.set_page_config(page_title="Trafik-Watch AI", layout="wide")
+# --- KONFIGURASI HALAMAN ---
+st.set_page_config(page_title="SISMAKADIS 1.0 - Monitoring", layout="wide")
 
-# --- SIDEBAR MENU ---
-st.sidebar.title("🚀 TRAFIK-WATCH v1.0")
-st.sidebar.markdown("---")
-menu = st.sidebar.selectbox("Pilih Navigasi:", 
-    ["Dashboard Utama", "Live Monitoring", "Statistik Kendaraan", "Laporan Pelanggaran"])
+# --- CUSTOM CSS (Agar Mirip Screenshot) ---
+st.markdown("""
+    <style>
+    /* Mengubah warna Sidebar jadi Gelap */
+    [data-testid="stSidebar"] {
+        background-color: #222d32;
+        color: white;
+    }
+    /* Warna teks menu sidebar */
+    [data-testid="stSidebar"] .stMarkdown p {
+        color: #b8c7ce;
+    }
+    /* Mengatur Card Statistik */
+    .stMetric {
+        background-color: #ffffff;
+        border-top: 3px solid #00c0ef; /* Warna biru atas card */
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    /* Styling Header Dashboard */
+    .main-header {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: -10px;
+    }
+    .sub-header {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-st.sidebar.info("Login as: Indra Adikusuma (Admin)")
-
-# --- LOGIK HALAMAN ---
-if menu == "Dashboard Utama":
-    st.header("📊 Dashboard Monitoring Arus Lalu Lintas")
-    
-    # Baris 1: Kartu Statistik (Metrics)
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Kendaraan", "1,234", "+5%")
-    col2.metric("Rata-rata Kecepatan", "52 km/h", "-2 km/h")
-    col3.metric("Sepeda Motor", "678")
-    col4.metric("Mobil Pribadi", "410")
-
+# --- SIDEBAR (NAVIGASI) ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70) # Foto profil admin
+    st.markdown("**Indra Adikusuma** \n*Admin*")
     st.markdown("---")
+    
+    st.markdown("🔍 **Navigation**")
+    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi", "Report", "Backup Database"])
+    
+    st.markdown("---")
+    if st.button("Collapse"):
+        st.write("Sidebar Collapsed")
 
-    # Baris 2: Grafik dan Tabel
-    left_column, right_column = st.columns([2, 1])
+# --- MAIN CONTENT ---
+st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
 
-    with left_column:
-        st.subheader("📈 Tren Arus Kendaraan (Per Jam)")
-        # Contoh data dummy untuk grafik
-        chart_data = pd.DataFrame({
-            'Jam': ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00'],
-            'Jumlah': [150, 450, 300, 250, 280, 580]
-        })
-        fig = px.line(chart_data, x='Jam', y='Jumlah', markers=True)
-        st.plotly_chart(fig, use_container_width=True)
+# Banner Hijau Welcome
+st.success("✅ **Welcome To SISMAKADIS Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
 
-    with right_column:
-        st.subheader("🚗 Komposisi Jenis")
-        pie_data = pd.DataFrame({
-            'Jenis': ['Motor', 'Mobil', 'Truk', 'Bis'],
-            'Jumlah': [678, 410, 100, 46]
-        })
-        fig_pie = px.pie(pie_data, values='Jumlah', names='Jenis', hole=0.4)
-        st.plotly_chart(fig_pie, use_container_width=True)
+# --- BARIS 1: KARTU STATISTIK (4 Kolom) ---
+col1, col2, col3, col4 = st.columns(4)
 
-    # Baris 3: Tabel Log
-    st.subheader("📋 Log Kendaraan Terakhir")
-    log_data = pd.DataFrame({
-        'Waktu': ['10:35:12', '10:35:10', '10:35:05', '10:35:01'],
-        'Jenis': ['Sepeda Motor', 'Mobil', 'Truk', 'Bis'],
-        'Kecepatan': ['48 km/h', '55 km/h', '32 km/h', '38 km/h'],
-        'Status': ['Normal', 'Normal', 'Lambat', 'Normal']
-    })
-    st.table(log_data)
+with col1:
+    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Mobil & Motor")
+with col2:
+    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Normal")
+with col3:
+    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
+with col4:
+    st.metric(label="PELANGGARAN", value="12", delta="CCTV 01")
 
-elif menu == "Live Monitoring":
-    st.header("📹 Live AI Camera Feed")
-    st.warning("Menghubungkan ke Kamera CCTV... (Simulasi)")
-    # Di sini nanti tempat menaruh OpenCV Video Stream
-    st.image("https://via.placeholder.com/800x450.png?text=Live+Camera+Detection+Feed", caption="Kamera 01 - Jl. Slamet Riyadi")
+st.markdown("---")
+
+# --- BARIS 2: TABEL KONDISI & GRAFIK ---
+col_table, col_chart = st.columns([1, 1])
+
+with col_table:
+    st.markdown("📋 **Kondisi Arus Saat Ini**")
+    # Data dummy sesuai keinginanmu
+    data_kondisi = {
+        'No': [1, 2, 3, 4],
+        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
+        'Jumlah': [750, 400, 65, 30]
+    }
+    df_kondisi = pd.DataFrame(data_kondisi)
+    st.table(df_kondisi.set_index('No'))
+
+with col_chart:
+    st.markdown("📊 **Statistik Volume Kendaraan**")
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', 
+                 color='Jenis',
+                 color_discrete_map={'Sepeda Motor':'#3c8dbc', 'Mobil Pribadi':'#dd4b39', 'Truk':'#00a65a', 'Bis':'#f39c12'})
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- BARIS 3: REAL-TIME LOG ---
+st.markdown("🕒 **Log Hitungan Terakhir (Kamera AI)**")
+log_data = pd.DataFrame({
+    'Waktu': ['10:15:01', '10:14:55', '10:14:40', '10:14:30'],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Akurasi AI': ['98%', '95%', '97%', '92%']
+})
+st.dataframe(log_data, use_container_width=True)import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
+
+# --- KONFIGURASI HALAMAN ---
+st.set_page_config(page_title="SISMAKADIS 1.0 - Monitoring", layout="wide")
+
+# --- CUSTOM CSS (Agar Mirip Screenshot) ---
+st.markdown("""
+    <style>
+    /* Mengubah warna Sidebar jadi Gelap */
+    [data-testid="stSidebar"] {
+        background-color: #222d32;
+        color: white;
+    }
+    /* Warna teks menu sidebar */
+    [data-testid="stSidebar"] .stMarkdown p {
+        color: #b8c7ce;
+    }
+    /* Mengatur Card Statistik */
+    .stMetric {
+        background-color: #ffffff;
+        border-top: 3px solid #00c0ef; /* Warna biru atas card */
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    /* Styling Header Dashboard */
+    .main-header {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: -10px;
+    }
+    .sub-header {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SIDEBAR (NAVIGASI) ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70) # Foto profil admin
+    st.markdown("**Indra Adikusuma** \n*Admin*")
+    st.markdown("---")
+    
+    st.markdown("🔍 **Navigation**")
+    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi", "Report", "Backup Database"])
+    
+    st.markdown("---")
+    if st.button("Collapse"):
+        st.write("Sidebar Collapsed")
+
+# --- MAIN CONTENT ---
+st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
+
+# Banner Hijau Welcome
+st.success("✅ **Welcome To SISMAKADIS Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
+
+# --- BARIS 1: KARTU STATISTIK (4 Kolom) ---
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Mobil & Motor")
+with col2:
+    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Normal")
+with col3:
+    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
+with col4:
+    st.metric(label="PELANGGARAN", value="12", delta="CCTV 01")
+
+st.markdown("---")
+
+# --- BARIS 2: TABEL KONDISI & GRAFIK ---
+col_table, col_chart = st.columns([1, 1])
+
+with col_table:
+    st.markdown("📋 **Kondisi Arus Saat Ini**")
+    # Data dummy sesuai keinginanmu
+    data_kondisi = {
+        'No': [1, 2, 3, 4],
+        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
+        'Jumlah': [750, 400, 65, 30]
+    }
+    df_kondisi = pd.DataFrame(data_kondisi)
+    st.table(df_kondisi.set_index('No'))
+
+with col_chart:
+    st.markdown("📊 **Statistik Volume Kendaraan**")
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', 
+                 color='Jenis',
+                 color_discrete_map={'Sepeda Motor':'#3c8dbc', 'Mobil Pribadi':'#dd4b39', 'Truk':'#00a65a', 'Bis':'#f39c12'})
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- BARIS 3: REAL-TIME LOG ---
+st.markdown("🕒 **Log Hitungan Terakhir (Kamera AI)**")
+log_data = pd.DataFrame({
+    'Waktu': ['10:15:01', '10:14:55', '10:14:40', '10:14:30'],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Akurasi AI': ['98%', '95%', '97%', '92%']
+})
+st.dataframe(log_data, use_container_width=True)import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
+
+# --- KONFIGURASI HALAMAN ---
+st.set_page_config(page_title="SISMAKADIS 1.0 - Monitoring", layout="wide")
+
+# --- CUSTOM CSS (Agar Mirip Screenshot) ---
+st.markdown("""
+    <style>
+    /* Mengubah warna Sidebar jadi Gelap */
+    [data-testid="stSidebar"] {
+        background-color: #222d32;
+        color: white;
+    }
+    /* Warna teks menu sidebar */
+    [data-testid="stSidebar"] .stMarkdown p {
+        color: #b8c7ce;
+    }
+    /* Mengatur Card Statistik */
+    .stMetric {
+        background-color: #ffffff;
+        border-top: 3px solid #00c0ef; /* Warna biru atas card */
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    /* Styling Header Dashboard */
+    .main-header {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: -10px;
+    }
+    .sub-header {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SIDEBAR (NAVIGASI) ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70) # Foto profil admin
+    st.markdown("**Indra Adikusuma** \n*Admin*")
+    st.markdown("---")
+    
+    st.markdown("🔍 **Navigation**")
+    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi", "Report", "Backup Database"])
+    
+    st.markdown("---")
+    if st.button("Collapse"):
+        st.write("Sidebar Collapsed")
+
+# --- MAIN CONTENT ---
+st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
+
+# Banner Hijau Welcome
+st.success("✅ **Welcome To SISMAKADIS Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
+
+# --- BARIS 1: KARTU STATISTIK (4 Kolom) ---
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Mobil & Motor")
+with col2:
+    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Normal")
+with col3:
+    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
+with col4:
+    st.metric(label="PELANGGARAN", value="12", delta="CCTV 01")
+
+st.markdown("---")
+
+# --- BARIS 2: TABEL KONDISI & GRAFIK ---
+col_table, col_chart = st.columns([1, 1])
+
+with col_table:
+    st.markdown("📋 **Kondisi Arus Saat Ini**")
+    # Data dummy sesuai keinginanmu
+    data_kondisi = {
+        'No': [1, 2, 3, 4],
+        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
+        'Jumlah': [750, 400, 65, 30]
+    }
+    df_kondisi = pd.DataFrame(data_kondisi)
+    st.table(df_kondisi.set_index('No'))
+
+with col_chart:
+    st.markdown("📊 **Statistik Volume Kendaraan**")
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', 
+                 color='Jenis',
+                 color_discrete_map={'Sepeda Motor':'#3c8dbc', 'Mobil Pribadi':'#dd4b39', 'Truk':'#00a65a', 'Bis':'#f39c12'})
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- BARIS 3: REAL-TIME LOG ---
+st.markdown("🕒 **Log Hitungan Terakhir (Kamera AI)**")
+log_data = pd.DataFrame({
+    'Waktu': ['10:15:01', '10:14:55', '10:14:40', '10:14:30'],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Akurasi AI': ['98%', '95%', '97%', '92%']
+})
+st.dataframe(log_data, use_container_width=True)import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
+
+# --- KONFIGURASI HALAMAN ---
+st.set_page_config(page_title="SISMAKADIS 1.0 - Monitoring", layout="wide")
+
+# --- CUSTOM CSS (Agar Mirip Screenshot) ---
+st.markdown("""
+    <style>
+    /* Mengubah warna Sidebar jadi Gelap */
+    [data-testid="stSidebar"] {
+        background-color: #222d32;
+        color: white;
+    }
+    /* Warna teks menu sidebar */
+    [data-testid="stSidebar"] .stMarkdown p {
+        color: #b8c7ce;
+    }
+    /* Mengatur Card Statistik */
+    .stMetric {
+        background-color: #ffffff;
+        border-top: 3px solid #00c0ef; /* Warna biru atas card */
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    /* Styling Header Dashboard */
+    .main-header {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: -10px;
+    }
+    .sub-header {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SIDEBAR (NAVIGASI) ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70) # Foto profil admin
+    st.markdown("**Indra Adikusuma** \n*Admin*")
+    st.markdown("---")
+    
+    st.markdown("🔍 **Navigation**")
+    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi", "Report", "Backup Database"])
+    
+    st.markdown("---")
+    if st.button("Collapse"):
+        st.write("Sidebar Collapsed")
+
+# --- MAIN CONTENT ---
+st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
+
+# Banner Hijau Welcome
+st.success("✅ **Welcome To SISMAKADIS Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
+
+# --- BARIS 1: KARTU STATISTIK (4 Kolom) ---
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Mobil & Motor")
+with col2:
+    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Normal")
+with col3:
+    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
+with col4:
+    st.metric(label="PELANGGARAN", value="12", delta="CCTV 01")
+
+st.markdown("---")
+
+# --- BARIS 2: TABEL KONDISI & GRAFIK ---
+col_table, col_chart = st.columns([1, 1])
+
+with col_table:
+    st.markdown("📋 **Kondisi Arus Saat Ini**")
+    # Data dummy sesuai keinginanmu
+    data_kondisi = {
+        'No': [1, 2, 3, 4],
+        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
+        'Jumlah': [750, 400, 65, 30]
+    }
+    df_kondisi = pd.DataFrame(data_kondisi)
+    st.table(df_kondisi.set_index('No'))
+
+with col_chart:
+    st.markdown("📊 **Statistik Volume Kendaraan**")
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', 
+                 color='Jenis',
+                 color_discrete_map={'Sepeda Motor':'#3c8dbc', 'Mobil Pribadi':'#dd4b39', 'Truk':'#00a65a', 'Bis':'#f39c12'})
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- BARIS 3: REAL-TIME LOG ---
+st.markdown("🕒 **Log Hitungan Terakhir (Kamera AI)**")
+log_data = pd.DataFrame({
+    'Waktu': ['10:15:01', '10:14:55', '10:14:40', '10:14:30'],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Akurasi AI': ['98%', '95%', '97%', '92%']
+})
+st.dataframe(log_data, use_container_width=True)import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
+
+# --- KONFIGURASI HALAMAN ---
+st.set_page_config(page_title="SISMAKADIS 1.0 - Monitoring", layout="wide")
+
+# --- CUSTOM CSS (Agar Mirip Screenshot) ---
+st.markdown("""
+    <style>
+    /* Mengubah warna Sidebar jadi Gelap */
+    [data-testid="stSidebar"] {
+        background-color: #222d32;
+        color: white;
+    }
+    /* Warna teks menu sidebar */
+    [data-testid="stSidebar"] .stMarkdown p {
+        color: #b8c7ce;
+    }
+    /* Mengatur Card Statistik */
+    .stMetric {
+        background-color: #ffffff;
+        border-top: 3px solid #00c0ef; /* Warna biru atas card */
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    /* Styling Header Dashboard */
+    .main-header {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: -10px;
+    }
+    .sub-header {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SIDEBAR (NAVIGASI) ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70) # Foto profil admin
+    st.markdown("**Indra Adikusuma** \n*Admin*")
+    st.markdown("---")
+    
+    st.markdown("🔍 **Navigation**")
+    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi", "Report", "Backup Database"])
+    
+    st.markdown("---")
+    if st.button("Collapse"):
+        st.write("Sidebar Collapsed")
+
+# --- MAIN CONTENT ---
+st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
+
+# Banner Hijau Welcome
+st.success("✅ **Welcome To SISMAKADIS Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
+
+# --- BARIS 1: KARTU STATISTIK (4 Kolom) ---
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Mobil & Motor")
+with col2:
+    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Normal")
+with col3:
+    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
+with col4:
+    st.metric(label="PELANGGARAN", value="12", delta="CCTV 01")
+
+st.markdown("---")
+
+# --- BARIS 2: TABEL KONDISI & GRAFIK ---
+col_table, col_chart = st.columns([1, 1])
+
+with col_table:
+    st.markdown("📋 **Kondisi Arus Saat Ini**")
+    # Data dummy sesuai keinginanmu
+    data_kondisi = {
+        'No': [1, 2, 3, 4],
+        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
+        'Jumlah': [750, 400, 65, 30]
+    }
+    df_kondisi = pd.DataFrame(data_kondisi)
+    st.table(df_kondisi.set_index('No'))
+
+with col_chart:
+    st.markdown("📊 **Statistik Volume Kendaraan**")
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', 
+                 color='Jenis',
+                 color_discrete_map={'Sepeda Motor':'#3c8dbc', 'Mobil Pribadi':'#dd4b39', 'Truk':'#00a65a', 'Bis':'#f39c12'})
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- BARIS 3: REAL-TIME LOG ---
+st.markdown("🕒 **Log Hitungan Terakhir (Kamera AI)**")
+log_data = pd.DataFrame({
+    'Waktu': ['10:15:01', '10:14:55', '10:14:40', '10:14:30'],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Akurasi AI': ['98%', '95%', '97%', '92%']
+})
+st.dataframe(log_data, use_container_width=True)import streamlit as st
+import pandas as pd
+import plotly.express as px
+from datetime import datetime
+
+# --- KONFIGURASI HALAMAN ---
+st.set_page_config(page_title="SISMAKADIS 1.0 - Monitoring", layout="wide")
+
+# --- CUSTOM CSS (Agar Mirip Screenshot) ---
+st.markdown("""
+    <style>
+    /* Mengubah warna Sidebar jadi Gelap */
+    [data-testid="stSidebar"] {
+        background-color: #222d32;
+        color: white;
+    }
+    /* Warna teks menu sidebar */
+    [data-testid="stSidebar"] .stMarkdown p {
+        color: #b8c7ce;
+    }
+    /* Mengatur Card Statistik */
+    .stMetric {
+        background-color: #ffffff;
+        border-top: 3px solid #00c0ef; /* Warna biru atas card */
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    /* Styling Header Dashboard */
+    .main-header {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: -10px;
+    }
+    .sub-header {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SIDEBAR (NAVIGASI) ---
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70) # Foto profil admin
+    st.markdown("**Indra Adikusuma** \n*Admin*")
+    st.markdown("---")
+    
+    st.markdown("🔍 **Navigation**")
+    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi", "Report", "Backup Database"])
+    
+    st.markdown("---")
+    if st.button("Collapse"):
+        st.write("Sidebar Collapsed")
+
+# --- MAIN CONTENT ---
+st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
+
+# Banner Hijau Welcome
+st.success("✅ **Welcome To SISMAKADIS Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
+
+# --- BARIS 1: KARTU STATISTIK (4 Kolom) ---
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Mobil & Motor")
+with col2:
+    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Normal")
+with col3:
+    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
+with col4:
+    st.metric(label="PELANGGARAN", value="12", delta="CCTV 01")
+
+st.markdown("---")
+
+# --- BARIS 2: TABEL KONDISI & GRAFIK ---
+col_table, col_chart = st.columns([1, 1])
+
+with col_table:
+    st.markdown("📋 **Kondisi Arus Saat Ini**")
+    # Data dummy sesuai keinginanmu
+    data_kondisi = {
+        'No': [1, 2, 3, 4],
+        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
+        'Jumlah': [750, 400, 65, 30]
+    }
+    df_kondisi = pd.DataFrame(data_kondisi)
+    st.table(df_kondisi.set_index('No'))
+
+with col_chart:
+    st.markdown("📊 **Statistik Volume Kendaraan**")
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', 
+                 color='Jenis',
+                 color_discrete_map={'Sepeda Motor':'#3c8dbc', 'Mobil Pribadi':'#dd4b39', 'Truk':'#00a65a', 'Bis':'#f39c12'})
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- BARIS 3: REAL-TIME LOG ---
+st.markdown("🕒 **Log Hitungan Terakhir (Kamera AI)**")
+log_data = pd.DataFrame({
+    'Waktu': ['10:15:01', '10:14:55', '10:14:40', '10:14:30'],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Akurasi AI': ['98%', '95%', '97%', '92%']
+})
+st.dataframe(log_data, use_container_width=True)
