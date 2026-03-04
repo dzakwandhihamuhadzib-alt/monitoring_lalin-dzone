@@ -18,26 +18,20 @@ st.markdown("""
 
 # --- SIDEBAR (NAVIGASI) ---
 with st.sidebar:
-    # Avatar/Foto Admin
     st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70)
     st.markdown("**DZAKWAN DHIHA MUHADZDZIB** \n*Admin Utama*")
     st.markdown("---")
-    
     st.markdown("🔍 **Navigation**")
-    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi", "Report"])
-    
+    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi"])
     st.markdown("---")
     st.info("Sistem Monitoring Aktif")
 
 # --- MAIN CONTENT ---
 st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
-
-# Banner Hijau Welcome
 st.success("✅ **Welcome To SISMAKADIS Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
 
 # --- BARIS 1: KARTU STATISTIK ---
 col1, col2, col3, col4 = st.columns(4)
-
 with col1:
     st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Real-time")
 with col2:
@@ -64,6 +58,23 @@ with col_table:
 
 with col_chart:
     st.markdown("📊 **Statistik Volume**")
-    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', 
-                 color='Jenis',
-                 color_discrete_map={'Sepeda Motor':'#3c8dbc', 'Mobil Pribadi':'#dd4b39', 'Truk':'#00a65a', 'Bis':'#f39c1
+    # Bagian ini yang tadi terputus, sekarang sudah utuh:
+    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', color='Jenis',
+                 color_discrete_map={
+                     'Sepeda Motor': '#3c8dbc', 
+                     'Mobil Pribadi': '#dd4b39', 
+                     'Truk': '#00a65a', 
+                     'Bis': '#f39c12'
+                 })
+    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- BARIS 3: LOG DETAIL ---
+st.markdown("🕒 **Log Aktivitas Terakhir**")
+log_data = pd.DataFrame({
+    'Waktu': [datetime.now().strftime('%H:%M:%S') for _ in range(4)],
+    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
+    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
+    'Status': ['Terdeteksi', 'Terdeteksi', 'Terdeteksi', 'Terdeteksi']
+})
+st.dataframe(log_data, use_container_width=True)
