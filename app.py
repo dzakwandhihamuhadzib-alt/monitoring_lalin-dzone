@@ -1,82 +1,78 @@
 import streamlit as st
-import pandas as pd
-import plotly.express as px
-from datetime import datetime
+import cv2
+from ultralytics import YOLO
+import yt_dlp
+import datetime
+import time
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="SISMONRAN 1.0 - Monitoring", layout="wide")
+st.set_page_config(page_title="MONITORING - D_ONEJECT", layout="wide")
 
-# --- CUSTOM CSS ---
+# CSS untuk Custom Styling agar mirip UI yang kamu kirim
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] { background-color: #222d32; color: white; }
-    [data-testid="stSidebar"] .stMarkdown p { color: #b8c7ce; }
-    .stMetric { background-color: #ffffff; border-top: 3px solid #00c0ef; padding: 15px; border-radius: 5px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
-    .main-header { font-size: 24px; font-weight: bold; margin-bottom: -10px; }
+    .main { background-color: #000000; color: #ffffff; }
+    .stButton>button { width: 100%; background-color: #0e4b61; color: white; border-radius: 20px; border: 1px solid #58a6ff; }
+    .metric-card { background-color: #161b22; border: 1px solid #30363d; padding: 15px; border-radius: 10px; text-align: center; }
+    .digital-clock { font-family: 'Courier New', Courier, monospace; color: #58a6ff; font-size: 40px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- SIDEBAR (NAVIGASI) ---
+# --- SIDEBAR (MENU KIRI) ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=70)
-    st.markdown("**DZAKWAN DHIHA MUHADZDZIB** \n*Admin Utama*")
+    st.title("D_ONEJECT")
     st.markdown("---")
-    st.markdown("🔍 **Navigation**")
-    menu = st.radio("", ["Dashboard", "Master Setup", "Master Kendaraan", "Rekapitulasi"])
+    menu = st.radio("MENU UTAMA", ["PILIH KAMERA", "PUTAR ULANG", "OUTPUT DATA", "GRAFIK", "DESKRIPSI LAPORAN", "INFORMASI"])
     st.markdown("---")
-    st.info("Sistem Monitoring Aktif")
+    if st.button("Exit / Logout"):
+        st.write("Logged out")
 
-# --- MAIN CONTENT ---
-st.markdown('<p class="main-header">Dashboard <span style="font-weight:normal; font-size:16px; color:#999;">Overview & statistic</span></p>', unsafe_allow_html=True)
+# --- HEADER (JAM & TANGGAL) ---
+col_t1, col_t2, col_t3 = st.columns([2, 1, 1])
+with col_t1:
+    st.markdown(f"<div class='digital-clock'>{datetime.datetime.now().strftime('%H:%M:%S %p')}</div>", unsafe_allow_html=True)
+with col_t2:
+    st.subheader(datetime.datetime.now().strftime("%d-%B-%Y"))
+with col_t3:
+    st.markdown("<div class='metric-card'>SHIFT<br><h2>1</h2></div>", unsafe_allow_html=True)
 
-# Banner Hijau Welcome
-st.success("✅ **Welcome To SISMONRAN Version 1.0**. Aplikasi Sistem Informasi Monitoring Arus Lalu Lintas Pintar.")
-
-# --- BARIS 1: KARTU STATISTIK ---
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric(label="TOTAL KENDARAAN", value="1,245", delta="Real-time")
-with col2:
-    st.metric(label="RATA2 KECEPATAN", value="45 km/jam", delta="Lancar")
-with col3:
-    st.metric(label="KEMACETAN", value="15%", delta="Rendah")
-with col4:
-    st.metric(label="PELANGGARAN", value="12", delta="CCTV Aktif")
-
-st.markdown("---")
-
-# --- BARIS 2: TABEL & GRAFIK ---
-col_table, col_chart = st.columns([1, 1])
-
-with col_table:
-    st.markdown("📋 **Data Kendaraan Terdeteksi**")
-    data_kondisi = {
-        'No': [1, 2, 3, 4],
-        'Jenis': ['Sepeda Motor', 'Mobil Pribadi', 'Truk', 'Bis'],
-        'Jumlah': [750, 400, 65, 30]
+# --- AREA MONITORING ---
+if menu == "PILIH KAMERA":
+    # Database CCTV (Bisa kamu tambah lagi sesuai list sebelumnya)
+    cctv_list = {
+        "Simpang Tugu": "https://www.youtube.com/live/1v52cQ1qJBA",
+        "Nol KM": "https://www.youtube.com/live/n7FLPsRLboI",
+        "Malioboro": "https://www.youtube.com/live/cabN74Gdbc8"
     }
-    df_kondisi = pd.DataFrame(data_kondisi)
-    st.table(df_kondisi.set_index('No'))
+    
+    selected_cctv = st.selectbox("Pilih Lokasi Kamera", list(cctv_list.keys()))
+    
+    col_v1, col_v2 = st.columns([3, 1])
+    
+    with col_v1:
+        st.markdown(f"### Live Feed: {selected_cctv}")
+        # Placeholder untuk Video
+        video_placeholder = st.empty()
+        # Tombol Jalankan AI
+        if st.button("Mulai Analisis AI"):
+            # Logika deteksi YOLO di sini (Running di loop)
+            st.warning("Fitur deteksi sedang diproses... (Gunakan Streamlit WebRTC untuk performa lebih baik di web)")
 
-with col_chart:
-    st.markdown("📊 **Statistik Volume**")
-    # Bagian ini yang harus dipastikan tertutup dengan benar
-    fig = px.bar(df_kondisi, x='Jenis', y='Jumlah', color='Jenis',
-                 color_discrete_map={
-                     'Sepeda Motor': '#3c8dbc', 
-                     'Mobil Pribadi': '#dd4b39', 
-                     'Truk': '#00a65a', 
-                     'Bis': '#f39c12'
-                 })
-    fig.update_layout(showlegend=False, height=300, margin=dict(t=0, b=0, l=0, r=0))
-    st.plotly_chart(fig, use_container_width=True)
+    with col_v2:
+        st.markdown("<div class='metric-card'>KECEPATAN RATA-RATA<br><h3>40 KM/JAM</h3></div>", unsafe_allow_html=True)
+        st.markdown("---")
+        # Widget Jumlah Kendaraan (Sesuai Gambar 1)
+        st.write("📊 Statistik Real-time")
+        st.metric("MOBIL PRIBADI", "00000")
+        st.metric("SEPEDA MOTOR", "00000")
+        st.metric("MOBIL BARANG", "00000")
 
-# --- BARIS 3: LOG DETAIL ---
-st.markdown("🕒 **Log Aktivitas Terakhir**")
-log_data = pd.DataFrame({
-    'Waktu': [datetime.now().strftime('%H:%M:%S') for _ in range(4)],
-    'Objek': ['Mobil', 'Motor', 'Motor', 'Truk'],
-    'Kecepatan': ['52 km/h', '40 km/h', '38 km/h', '25 km/h'],
-    'Status': ['Terdeteksi', 'Terdeteksi', 'Terdeteksi', 'Terdeteksi']
-})
-st.dataframe(log_data, use_container_width=True)
+elif menu == "GRAFIK":
+    st.header("Grafik Aktivitas Kendaraan")
+    col_g1, col_g2 = st.columns(2)
+    with col_g1:
+        st.write("KENDARAAN KE TIMUR")
+        # Contoh Pie Chart
+        st.image("https://streamlit.io/images/brand/streamlit-mark-color.png", width=100) # Ganti dengan chart asli
+    with col_g2:
+        st.write("KENDARAAN KE BARAT")
